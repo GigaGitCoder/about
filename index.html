@@ -156,29 +156,38 @@ nav {
   .burger { display: flex; }
   .nav-links {
     position: fixed;
-    top: var(--nav-h); left: 0; right: 0; bottom: 0;
+    top: var(--nav-h); left: 0; right: 0;
+    height: auto;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2.2rem;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
     background: #0e0b0b;
     border-top: 1px solid rgba(220,60,35,.4);
+    border-bottom: 1px solid rgba(220,60,35,.4);
     transform: translateX(100%);
     transition: transform .32s cubic-bezier(.4,0,.2,1);
     z-index: 8500;
-    overflow-y: auto;
-    padding: 2rem 1.5rem;
+    overflow: hidden;
+    padding: 0;
   }
   .nav-links.open { transform: translateX(0); }
   .nav-links a {
-    font-size: 1.15rem;
+    display: block;
+    font-size: 1rem;
     font-weight: 600;
     color: #f2ede8;
-    letter-spacing: .05em;
-    padding: .35rem 0;
+    letter-spacing: .04em;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+    transition: color .2s, background .2s;
   }
+  .nav-links li:last-child a { border-bottom: none; }
   .nav-links a:hover,
-  .nav-links a.active { color: #ff5c42; }
+  .nav-links a.active {
+    color: #ff5c42;
+    background: rgba(217,56,32,.08);
+  }
 }
 
 /* ═══════════════════════════════════════
