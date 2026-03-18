@@ -85,45 +85,14 @@ body::after {
    CURSOR
 ═══════════════════════════════════════ */
 @media (pointer:fine) {
-  body { cursor: none; }
+  body, body * { cursor: none !important; }
   #cursor {
-    position: fixed; top: 0; left: 0; z-index: 9999;
-    width: 10px; height: 10px;
-    background: var(--red-light);
+    position: fixed;
+    top: 0; left: 0;
     pointer-events: none;
-    transform: translate(-50%,-50%) rotate(0deg);
-    transition: width .35s ease, height .35s ease,
-                border-radius .35s ease,
-                clip-path .35s ease,
-                background .25s ease,
-                transform .35s ease;
-    box-shadow: 0 0 6px rgba(255,92,66,.7);
-  }
-  #cursor.is-circle    { border-radius: 50%; }
-  #cursor.is-square    { border-radius: 2px; width: 11px; height: 11px; }
-  #cursor.is-triangle  {
-    background: transparent;
-    width: 0; height: 0;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-bottom: 11px solid var(--red-light);
-    box-shadow: none;
-  }
-  #cursor.is-diamond   {
-    border-radius: 2px;
-    width: 9px; height: 9px;
-    transform: translate(-50%,-50%) rotate(45deg);
-  }
-  #cursor.is-pentagon  {
-    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-    width: 11px; height: 10px;
-  }
-  #cursor.is-hover {
-    width: 18px; height: 18px;
-    border-radius: 50%;
-    background: transparent;
-    border: 2px solid var(--red-light);
-    box-shadow: 0 0 10px rgba(255,92,66,.5);
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    overflow: visible;
   }
 }
 
@@ -524,7 +493,21 @@ footer {
 </style>
 </head>
 <body>
-<div id="cursor"></div>
+<svg id="cursor" width="40" height="40" viewBox="-20 -20 40 40"
+     xmlns="http://www.w3.org/2000/svg" style="overflow:visible">
+  <defs>
+    <filter id="cur-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <circle class="cur-dot" cx="0" cy="0" r="3.5" fill="#ff5c42"
+          style="transition: r .2s ease, opacity .2s ease"/>
+  <path class="cur-shape" fill="none" stroke="#ff5c42" stroke-width="1.5"
+        stroke-linejoin="round" stroke-linecap="round"
+        filter="url(#cur-glow)" d="" opacity="0"
+        style="transition: opacity .15s ease"/>
+</svg>
 
 <!-- NAV ──────────────────────────── -->
 <nav>
@@ -834,39 +817,125 @@ footer {
 'use strict';
 
 /* ── cursor ─────────────────────── */
-/* ── cursor ─────────────────────── */
-const cur = document.getElementById('cursor');
-if (cur && matchMedia('(pointer:fine)').matches) {
-  const shapes = ['is-circle','is-square','is-diamond','is-pentagon'];
-  let shapeIdx = 0;
-  let shapeTimer = null;
-
-  function nextShape() {
-    cur.classList.remove(...shapes,'is-triangle','is-hover');
-    cur.classList.add(shapes[shapeIdx % shapes.length]);
-    shapeIdx++;
-    shapeTimer = setTimeout(nextShape, 1800 + Math.random() * 1200);
-  }
+(function() {
+  if (!matchMedia('(pointer:fine)').matches) return;
+  const svg   = document.getElementById('cursor');
+  if (!svg) return;
+  const dot   = svg.querySelector('.cur-dot');
+  const shape = svg.querySelector('.cur-shape');
 
   document.addEventListener('mousemove', e => {
-    cur.style.left = e.clientX + 'px';
-    cur.style.top  = e.clientY + 'px';
+    svg.style.left = e.clientX + 'px';
+    svg.style.top  = e.clientY + 'px';
   });
 
-  document.querySelectorAll('a,button').forEach(el => {
-    el.addEventListener('mouseenter', () => {
-      clearTimeout(shapeTimer);
-      cur.classList.remove(...shapes,'is-triangle');
-      cur.classList.add('is-hover');
-    });
-    el.addEventListener('mouseleave', () => {
-      cur.classList.remove('is-hover');
-      nextShape();
-    });
-  });
+  const N = 24, TAU = Math.PI * 2;
 
-  nextShape();
-}
+  function poly(sides, r) {
+    return Array.from({length: N}, (_, i) => {
+      const a = (i / N) * TAU;
+      const sec = TAU / sides;
+      const pos = ((a % sec) + sec) % sec;
+      return r * Math.cos(sec / 2) / Math.cos(pos - sec / 2);
+    });
+  }
+
+  function star(spikes, rOut, rIn) {
+    return Array.from({length: N}, (_, i) => {
+      const a = (i / N) * TAU;
+      const sec = TAU / spikes;
+      const pos = ((a % sec) + sec) % sec;
+      const spike = Math.abs(pos / sec - 0.5) * 2;
+      return rIn + (rOut - rIn) * spike;
+    });
+  }
+
+  function ellipse(rx, ry) {
+    return Array.from({length: N}, (_, i) => {
+      const a = (i / N) * TAU;
+      const c = Math.cos(a), s = Math.sin(a);
+      return 1 / Math.sqrt(c*c/(rx*rx) + s*s/(ry*ry));
+    });
+  }
+
+  function wavy(base, waves, amp) {
+    return Array.from({length: N}, (_, i) =>
+      base + amp * Math.sin(waves * (i / N) * TAU)
+    );
+  }
+
+  function rotated(r, steps) {
+    return r.map((_, i) => r[(i + steps + N) % N]);
+  }
+
+  const SHAPES = [
+    ellipse(8, 8),          // окружность
+  ];
+
+  function toPath(radii) {
+    const pts = radii.map((r, i) => {
+      const a = (i / N) * TAU - Math.PI / 2;
+      return `${(r * Math.cos(a)).toFixed(2)},${(r * Math.sin(a)).toFixed(2)}`;
+    });
+    return `M${pts.join('L')}Z`;
+  }
+
+  function lerpR(a, b, t) { return a.map((v, i) => v + (b[i] - v) * t); }
+  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+  let curR = Array(N).fill(0), fromR = curR, toR = curR;
+  let morphT = 1, morphRAF = null;
+  let shapeIdx = 0, cycleTO = null, hovering = false;
+
+  function tick() {
+    morphT = Math.min(morphT + 0.12, 1);
+    curR = lerpR(fromR, toR, easeOut(morphT));
+    shape.setAttribute('d', toPath(curR));
+    if (morphT < 1) morphRAF = requestAnimationFrame(tick);
+  }
+
+  function morphTo(idx) {
+    fromR = curR.slice();
+    toR   = SHAPES[idx];
+    morphT = 0;
+    shapeIdx = idx;
+    cancelAnimationFrame(morphRAF);
+    morphRAF = requestAnimationFrame(tick);
+  }
+
+  function cycleNext() {
+    if (!hovering) return;
+    morphTo((shapeIdx + 1) % SHAPES.length);
+    cycleTO = setTimeout(cycleNext, 2500);
+  }
+
+  function onEnter() {
+    if (hovering) return;
+    hovering = true;
+    dot.setAttribute('r', '0');
+    dot.style.opacity = '0';
+    shape.setAttribute('opacity', '1');
+    curR = Array(N).fill(0.1);
+    clearTimeout(cycleTO);
+    morphTo(shapeIdx);
+    cycleTO = setTimeout(cycleNext, 2500);
+  }
+
+  function onLeave() {
+    hovering = false;
+    clearTimeout(cycleTO);
+    cancelAnimationFrame(morphRAF);
+    morphT = 1; curR = Array(N).fill(0);
+    dot.setAttribute('r', '3.5');
+    dot.style.opacity = '1';
+    shape.setAttribute('opacity', '0');
+  }
+
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', onEnter);
+    el.addEventListener('mouseleave', onLeave);
+  });
+})();
 
 /* ── burger ─────────────────────── */
 const burger = document.getElementById('burger');
