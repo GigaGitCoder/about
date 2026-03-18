@@ -88,12 +88,42 @@ body::after {
   body { cursor: none; }
   #cursor {
     position: fixed; top: 0; left: 0; z-index: 9999;
-    width: 6px; height: 6px; border-radius: 50%;
+    width: 10px; height: 10px;
     background: var(--red-light);
     pointer-events: none;
-    transform: translate(-50%,-50%);
-    transition: width .18s, height .18s, opacity .18s;
-    mix-blend-mode: screen;
+    transform: translate(-50%,-50%) rotate(0deg);
+    transition: width .35s ease, height .35s ease,
+                border-radius .35s ease,
+                clip-path .35s ease,
+                background .25s ease,
+                transform .35s ease;
+    box-shadow: 0 0 6px rgba(255,92,66,.7);
+  }
+  #cursor.is-circle    { border-radius: 50%; }
+  #cursor.is-square    { border-radius: 2px; width: 11px; height: 11px; }
+  #cursor.is-triangle  {
+    background: transparent;
+    width: 0; height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 11px solid var(--red-light);
+    box-shadow: none;
+  }
+  #cursor.is-diamond   {
+    border-radius: 2px;
+    width: 9px; height: 9px;
+    transform: translate(-50%,-50%) rotate(45deg);
+  }
+  #cursor.is-pentagon  {
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    width: 11px; height: 10px;
+  }
+  #cursor.is-hover {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: transparent;
+    border: 2px solid var(--red-light);
+    box-shadow: 0 0 10px rgba(255,92,66,.5);
   }
 }
 
@@ -804,13 +834,38 @@ footer {
 'use strict';
 
 /* ── cursor ─────────────────────── */
+/* ── cursor ─────────────────────── */
 const cur = document.getElementById('cursor');
 if (cur && matchMedia('(pointer:fine)').matches) {
-  document.addEventListener('mousemove', e => { cur.style.left = e.clientX+'px'; cur.style.top = e.clientY+'px'; });
-  document.querySelectorAll('a,button').forEach(el => {
-    el.addEventListener('mouseenter', () => { cur.style.width='12px'; cur.style.height='12px'; });
-    el.addEventListener('mouseleave', () => { cur.style.width='6px';  cur.style.height='6px'; });
+  const shapes = ['is-circle','is-square','is-diamond','is-pentagon'];
+  let shapeIdx = 0;
+  let shapeTimer = null;
+
+  function nextShape() {
+    cur.classList.remove(...shapes,'is-triangle','is-hover');
+    cur.classList.add(shapes[shapeIdx % shapes.length]);
+    shapeIdx++;
+    shapeTimer = setTimeout(nextShape, 1800 + Math.random() * 1200);
+  }
+
+  document.addEventListener('mousemove', e => {
+    cur.style.left = e.clientX + 'px';
+    cur.style.top  = e.clientY + 'px';
   });
+
+  document.querySelectorAll('a,button').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      clearTimeout(shapeTimer);
+      cur.classList.remove(...shapes,'is-triangle');
+      cur.classList.add('is-hover');
+    });
+    el.addEventListener('mouseleave', () => {
+      cur.classList.remove('is-hover');
+      nextShape();
+    });
+  });
+
+  nextShape();
 }
 
 /* ── burger ─────────────────────── */
