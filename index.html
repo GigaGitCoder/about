@@ -100,7 +100,7 @@ body::after {
    NAV
 ═══════════════════════════════════════ */
 nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 800;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 8600;
   height: var(--nav-h);
   background: rgba(12,10,10,.82);
   backdrop-filter: blur(22px);
@@ -155,14 +155,30 @@ nav {
 @media (max-width:680px) {
   .burger { display: flex; }
   .nav-links {
-    position: fixed; top: var(--nav-h); inset: var(--nav-h) 0 0 0;
-    flex-direction: column; align-items: center; justify-content: center;
-    gap: 2rem; background: rgba(12,10,10,.97);
-    transform: translateX(100%); transition: transform .32s cubic-bezier(.4,0,.2,1);
-    z-index: 790; border-top: 1px solid var(--border);
+    position: fixed;
+    top: var(--nav-h); left: 0; right: 0; bottom: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2.2rem;
+    background: #0e0b0b;
+    border-top: 1px solid rgba(220,60,35,.4);
+    transform: translateX(100%);
+    transition: transform .32s cubic-bezier(.4,0,.2,1);
+    z-index: 8500;
+    overflow-y: auto;
+    padding: 2rem 1.5rem;
   }
   .nav-links.open { transform: translateX(0); }
-  .nav-links a { font-size: 1.1rem; }
+  .nav-links a {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #f2ede8;
+    letter-spacing: .05em;
+    padding: .35rem 0;
+  }
+  .nav-links a:hover,
+  .nav-links a.active { color: #ff5c42; }
 }
 
 /* ═══════════════════════════════════════
@@ -770,7 +786,7 @@ footer {
 <footer>
   <div class="inner" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;width:100%">
     <div class="footer-brand"><span class="logo-igor">IGOR</span>&nbsp;<span class="logo-xmel">XMEL</span></div>
-    <div class="footer-copy">© 2026 IgorXmel · Ростов-на-Дону · Python · Java</div>
+    <div class="footer-copy">© 2025 <span style="color:var(--text)">Igor</span> <span style="color:var(--red-light);text-shadow:0 0 8px rgba(255,92,66,.5)">Xmel</span> · <span data-key="f_city">Ростов-на-Дону</span> · Python · Java</div>
   </div>
 </footer>
 
