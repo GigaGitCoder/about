@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Igor Xmel — Backend Developer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600&family=Unbounded:wght@700;900&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════
+   TOKENS
+═══════════════════════════════════════ */
+:root {
+  --bg:          #0c0a0a;
+  --surface:     #131010;
+  --surface2:    #1a1515;
+  --border:      rgba(255,255,255,.07);
+  --border-red:  rgba(220,60,35,.32);
+  --red:         #d93820;
+  --red-light:   #ff5c42;
+  --red-dim:     rgba(217,56,32,.15);
+  --grad:        linear-gradient(135deg,#d93820 0%,#ff7a5c 100%);
+  --grad-r:      linear-gradient(135deg,#ff7a5c 0%,#d93820 100%);
+  --grad-subtle: linear-gradient(135deg,rgba(217,56,32,.13) 0%,rgba(255,122,92,.05) 100%);
+  --text:        #f2ede8;
+  --text-2:      #9a8e8a;
+  --text-3:      #4a3e3a;
+  --radius:      12px;
+  --radius-sm:   8px;
+  --nav-h:       64px;
+  --font-d:      'Unbounded', sans-serif;
+  --font-b:      'Onest', sans-serif;
+}
+
+/* ═══════════════════════════════════════
+   RESET
+═══════════════════════════════════════ */
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-b);
+  font-weight: 400;
+  overflow-x: hidden;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Grain overlay ────────────────────
+   SVG feTurbulence grain baked into a data-URI
+   and repeated as a fixed pseudo-element        */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 9000;
+  pointer-events: none;
+  opacity: .38;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)' opacity='0.12'/%3E%3C/svg%3E");
+  background-size: 220px 220px;
+}
+
+/* ─── Global mesh gradient background ─ */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 40% at 70% 15%, rgba(217,56,32,.09) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 50% at 20% 80%, rgba(217,56,32,.06) 0%, transparent 65%);
+  animation: meshShift 14s ease-in-out infinite alternate;
+}
+@keyframes meshShift {
+  0%   { opacity: 1; transform: scale(1)   translateY(0); }
+  50%  { opacity: .8; transform: scale(1.04) translateY(-12px); }
+  100% { opacity: 1; transform: scale(1)   translateY(0); }
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--red); border-radius: 2px; }
+
+/* ═══════════════════════════════════════
+   CURSOR
+═══════════════════════════════════════ */
+@media (pointer:fine) {
+  body { cursor: none; }
+  #cursor {
+    position: fixed; top: 0; left: 0; z-index: 9999;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--red-light);
+    pointer-events: none;
+    transform: translate(-50%,-50%);
+    transition: width .18s, height .18s, opacity .18s;
+    mix-blend-mode: screen;
+  }
+}
+
+/* ═══════════════════════════════════════
+   NAV
+═══════════════════════════════════════ */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 800;
+  height: var(--nav-h);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 clamp(1.25rem,5vw,3.5rem);
+  background: rgba(12,10,10,.82);
+  backdrop-filter: blur(22px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo {
+  font-family: var(--font-d);
+  font-size: .72rem; font-weight: 700; letter-spacing: .12em;
+  text-decoration: none; text-transform: uppercase;
+}
+.nav-logo .logo-igor { color: var(--text); }
+.nav-logo .logo-xmel {
+  color: var(--red-light);
+  text-shadow: 0 0 10px rgba(255,92,66,.7), 0 0 24px rgba(217,56,32,.4);
+}
+.nav-links { display: flex; gap: clamp(.6rem,2vw,1.8rem); list-style: none; }
+.nav-links a {
+  font-size: .8rem; font-weight: 500; letter-spacing: .03em;
+  color: var(--text-2); text-decoration: none; transition: color .2s;
+}
+.nav-links a:hover, .nav-links a.active { color: var(--text); }
+
+/* lang pill */
+.lang-pill {
+  display: flex; align-items: center;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 2px; gap: 1px; flex-shrink: 0;
+}
+.lang-pill button {
+  font-family: var(--font-b); font-size: .7rem; font-weight: 600;
+  letter-spacing: .07em; padding: .28rem .72rem;
+  background: transparent; border: none; border-radius: 16px;
+  cursor: pointer; color: var(--text-2); transition: all .22s;
+}
+.lang-pill button.active { background: var(--grad); color: #fff; }
+
+/* burger */
+.burger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
+.burger span { display: block; width: 20px; height: 1.5px; background: var(--text-2); transition: all .3s; border-radius: 2px; }
+.burger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); background: var(--red-light); }
+.burger.open span:nth-child(2) { opacity: 0; }
+.burger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); background: var(--red-light); }
+.nav-right { display: flex; align-items: center; gap: .75rem; }
+
+@media (max-width:680px) {
+  .burger { display: flex; }
+  .nav-links {
+    position: fixed; top: var(--nav-h); inset: var(--nav-h) 0 0 0;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 2rem; background: rgba(12,10,10,.97);
+    transform: translateX(100%); transition: transform .32s cubic-bezier(.4,0,.2,1);
+    z-index: 790; border-top: 1px solid var(--border);
+  }
+  .nav-links.open { transform: translateX(0); }
+  .nav-links a { font-size: 1.1rem; }
+}
+
+/* ═══════════════════════════════════════
+   UTILS
+═══════════════════════════════════════ */
+.fade-up { opacity: 0; transform: translateY(20px); transition: opacity .65s ease, transform .65s ease; }
+.fade-up.visible { opacity: 1; transform: translateY(0); }
+
+.sw { padding: clamp(5rem,9vw,8rem) clamp(1.25rem,5vw,3.5rem); position: relative; z-index: 1; }
+.sw-alt { background: var(--surface); }
+
+.sec-label { display: flex; align-items: center; gap: 1rem; margin-bottom: clamp(2.5rem,4vw,3.5rem); }
+.sec-num { font-size: .68rem; font-weight: 600; letter-spacing: .18em; color: var(--red-light); text-transform: uppercase; text-shadow: 0 0 10px rgba(255,92,66,.6); }
+.sec-title { font-family: var(--font-d); font-size: clamp(1.4rem,3vw,2rem); font-weight: 700; letter-spacing: -.01em; color: var(--text); }
+.sec-line { flex: 1; height: 1px; background: linear-gradient(to right, var(--border-red), transparent); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: .5rem;
+  padding: .65rem 1.5rem; font-family: var(--font-b);
+  font-size: .85rem; font-weight: 600; letter-spacing: .03em;
+  text-decoration: none; border-radius: var(--radius-sm);
+  transition: all .22s; cursor: pointer; border: none; white-space: nowrap;
+}
+.btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+.btn-p { background: var(--grad); color: #fff; box-shadow: 0 4px 20px rgba(217,56,32,.4), 0 0 0 1px rgba(255,92,66,.15); }
+.btn-p:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(217,56,32,.6), 0 0 24px rgba(255,92,66,.25); }
+.btn-o { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.btn-o:hover { border-color: var(--red-light); background: var(--red-dim); box-shadow: 0 0 12px rgba(255,92,66,.15); }
+
+/* ═══════════════════════════════════════
+   HERO
+═══════════════════════════════════════ */
+#hero {
+  min-height: 100svh;
+  display: flex; align-items: center;
+  padding: calc(var(--nav-h) + clamp(3rem,6vw,5rem)) clamp(1.25rem,5vw,3.5rem) clamp(4rem,8vw,6rem);
+  position: relative; overflow: hidden; z-index: 1;
+}
+
+/* big radial spotlight — pulses */
+.hero-spotlight {
+  position: absolute; top: -10%; right: -8%;
+  width: clamp(340px,60vw,780px); height: clamp(340px,60vw,780px);
+  border-radius: 50%; pointer-events: none;
+  background: radial-gradient(ellipse at center,
+    rgba(217,56,32,.13) 0%,
+    rgba(217,56,32,.04) 50%,
+    transparent 72%);
+  animation: spotlight 9s ease-in-out infinite alternate;
+}
+@keyframes spotlight {
+  0%   { transform: scale(1)    translateY(0)   translateX(0); opacity: .9; }
+  50%  { transform: scale(1.07) translateY(-18px) translateX(-10px); opacity: 1; }
+  100% { transform: scale(.96)  translateY(10px) translateX(5px); opacity: .8; }
+}
+
+/* subtle flare top-left */
+.hero-flare {
+  position: absolute; top: 5%; left: -5%;
+  width: 400px; height: 300px; pointer-events: none;
+  background: radial-gradient(ellipse at 30% 40%,
+    rgba(255,90,50,.06) 0%, transparent 65%);
+  animation: spotlight 13s ease-in-out infinite alternate-reverse;
+}
+
+.hero-inner { max-width: 760px; position: relative; z-index: 2; }
+
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: .6rem;
+  font-size: .75rem; font-weight: 500; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--text-2); margin-bottom: 1.4rem;
+}
+.hero-eyebrow::before { content: ''; display: block; width: 22px; height: 1px; background: var(--grad); }
+
+/* animated gradient name */
+h1.hero-name {
+  font-family: var(--font-d);
+  font-size: clamp(3rem,10vw,8rem);
+  font-weight: 900; line-height: .9; letter-spacing: -.03em;
+  margin-bottom: .35rem;
+}
+.name-first { display: block; color: var(--text); }
+.name-last {
+  display: block;
+  color: var(--red-light);
+  text-shadow:
+    0 0 20px rgba(255,92,66,.8),
+    0 0 50px rgba(217,56,32,.45),
+    0 0 90px rgba(217,56,32,.2);
+}
+
+
+.hero-meta { display: flex; flex-wrap: wrap; gap: .4rem .9rem; margin-top: 1.1rem; margin-bottom: .9rem; }
+.hero-meta-item { display: flex; align-items: center; gap: .4rem; font-size: .8rem; color: var(--text-2); }
+.hero-meta-item svg { width: 13px; height: 13px; color: var(--red); flex-shrink: 0; }
+
+.hero-desc { font-size: clamp(.88rem,2vw,.97rem); color: var(--text-2); line-height: 1.8; max-width: 500px; margin-bottom: 2.2rem; }
+
+.hero-btns { display: flex; gap: .8rem; flex-wrap: wrap; }
+
+/* scroll cue */
+.scroll-cue {
+  position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  opacity: .3; animation: scueBob 2.4s ease-in-out infinite;
+}
+.scroll-cue svg { width: 18px; height: 18px; color: var(--text-2); }
+.scroll-cue span { font-size: .6rem; letter-spacing: .2em; color: var(--text-2); }
+@keyframes scueBob { 0%,100%{ transform:translateX(-50%) translateY(0); } 55%{ transform:translateX(-50%) translateY(8px); } }
+@media (max-width:500px) { .scroll-cue { display:none; } }
+
+/* ═══════════════════════════════════════
+   ABOUT
+═══════════════════════════════════════ */
+.about-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(2.5rem,5vw,3.5rem);
+}
+@media (min-width:860px) {
+  .about-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.about-text { display: flex; flex-direction: column; gap: 1rem; }
+.about-text p { font-size: .93rem; line-height: 1.85; color: var(--text-2); }
+.about-text p strong { color: var(--text); font-weight: 600; }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .9rem;
+  align-content: center;
+}
+@media (max-width:860px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width:480px) { .stats-grid { grid-template-columns: 1fr 1fr; } }
+
+.stat-card {
+  padding: 1.4rem 1.2rem;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+  position: relative; overflow: hidden;
+  transition: border-color .25s, transform .22s;
+}
+.stat-card:hover { border-color: var(--border-red); transform: translateY(-2px); box-shadow: 0 0 18px rgba(217,56,32,.18); }
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--grad); opacity: 0; transition: opacity .25s; }
+.stat-card:hover::before { opacity: 1; }
+.stat-card-num {
+  font-family: var(--font-d); font-size: 2.2rem; font-weight: 700; line-height: 1; margin-bottom: .35rem;
+  color: var(--red-light);
+  text-shadow: 0 0 18px rgba(255,92,66,.55), 0 0 40px rgba(217,56,32,.28);
+}
+.stat-card-label { font-size: .72rem; font-weight: 500; color: var(--text-2); letter-spacing: .04em; }
+
+/* ═══════════════════════════════════════
+   SPEC
+═══════════════════════════════════════ */
+.spec-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(230px,1fr)); gap: 1rem; }
+.spec-card {
+  padding: 1.6rem;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  position: relative; overflow: hidden;
+  transition: border-color .25s, transform .22s, background .25s;
+}
+.spec-card:hover { border-color: var(--border-red); transform: translateY(-3px); background: var(--surface2); box-shadow: 0 0 20px rgba(217,56,32,.15); }
+.spec-card::after { content: ''; position: absolute; inset: 0; background: var(--grad-subtle); opacity: 0; transition: opacity .25s; pointer-events: none; }
+.spec-card:hover::after { opacity: 1; }
+.spec-icon { width: 40px; height: 40px; background: var(--grad-subtle); border: 1px solid var(--border-red); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; position: relative; z-index: 1; }
+.spec-icon svg { width: 20px; height: 20px; color: var(--red-light); }
+.spec-title { font-size: .95rem; font-weight: 600; color: var(--text); margin-bottom: .45rem; position: relative; z-index: 1; }
+.spec-desc { font-size: .82rem; line-height: 1.75; color: var(--text-2); position: relative; z-index: 1; }
+
+/* ═══════════════════════════════════════
+   STACK
+═══════════════════════════════════════ */
+.stack-group { margin-bottom: 1.8rem; }
+.stack-group:last-child { margin-bottom: 0; }
+.stack-group-label {
+  font-size: .7rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--red-light); margin-bottom: .85rem;
+  display: flex; align-items: center; gap: .8rem;
+}
+.stack-group-label::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, var(--border-red), transparent); }
+.stack-pills { display: flex; flex-wrap: wrap; gap: .55rem; }
+.pill {
+  display: flex; align-items: center; gap: .5rem; padding: .4rem .9rem;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 20px;
+  font-size: .78rem; font-weight: 500; color: var(--text-2); transition: all .2s;
+}
+.pill:hover { border-color: var(--border-red); color: var(--text); background: var(--red-dim); }
+.pill-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-3); flex-shrink: 0; transition: background .2s; }
+.pill:hover .pill-dot { background: var(--red); }
+.pill.hi { border-color: var(--border-red); color: var(--text); }
+.pill.hi .pill-dot { background: var(--red); }
+
+/* ═══════════════════════════════════════
+   PROJECTS
+═══════════════════════════════════════ */
+.projects-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(290px,1fr)); gap: 1rem; }
+
+.project-card {
+  padding: 1.5rem; display: flex; flex-direction: column; gap: .8rem;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  position: relative; overflow: hidden;
+  transition: border-color .25s, transform .22s;
+}
+.project-card:hover { border-color: var(--border-red); transform: translateY(-3px); box-shadow: 0 0 20px rgba(217,56,32,.15); }
+.project-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: var(--grad); opacity: 0; transition: opacity .25s; }
+.project-card:hover::before { opacity: 1; }
+
+/* animated gradient border on featured */
+.project-card.featured { border-color: var(--border-red); }
+.project-card.featured::after {
+  content: ''; position: absolute; inset: 0; z-index: 0; border-radius: var(--radius);
+  background: var(--grad-subtle); pointer-events: none;
+}
+
+.p-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
+.p-card-icon { width: 36px; height: 36px; flex-shrink: 0; background: var(--grad-subtle); border: 1px solid var(--border-red); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; }
+.p-card-icon svg { width: 18px; height: 18px; color: var(--red-light); }
+.p-stars { display: flex; align-items: center; gap: .3rem; font-size: .72rem; color: var(--text-2); font-weight: 500; }
+.p-stars svg { width: 12px; height: 12px; color: var(--red); }
+
+.p-name { font-size: .98rem; font-weight: 600; color: var(--text); line-height: 1.25; position: relative; z-index: 1; }
+.p-desc { font-size: .82rem; color: var(--text-2); line-height: 1.7; flex: 1; position: relative; z-index: 1; }
+.p-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; margin-top: auto; position: relative; z-index: 1; }
+.p-lang { display: flex; align-items: center; gap: .4rem; font-size: .72rem; font-weight: 500; color: var(--text-2); }
+.lang-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.p-link { display: flex; align-items: center; gap: .3rem; font-size: .78rem; font-weight: 500; color: var(--red-light); text-decoration: none; transition: color .2s; }
+.p-link:hover { color: var(--text); }
+.p-link svg { width: 13px; height: 13px; }
+
+/* skeleton */
+.skel { background: linear-gradient(90deg, var(--surface2) 25%, var(--surface) 50%, var(--surface2) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 6px; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.skel-card { padding: 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+
+.api-error { grid-column: 1/-1; text-align: center; padding: 2.5rem; color: var(--text-2); font-size: .88rem; }
+.api-error a { color: var(--red-light); }
+
+/* ═══════════════════════════════════════
+   HACKATHONS
+═══════════════════════════════════════ */
+.hack-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(230px,1fr)); gap: .85rem; }
+.hack-card {
+  padding: 1.1rem 1.25rem; display: flex; align-items: center; gap: 1rem;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+  transition: border-color .25s, transform .22s;
+}
+.hack-card:hover { border-color: var(--border-red); transform: translateY(-2px); }
+.hack-card.podium { border-color: var(--border-red); background: var(--red-dim); }
+.hack-medal { flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-d); font-size: .9rem; font-weight: 700; border: 1.5px solid transparent; }
+.m-silver { background: linear-gradient(135deg,#708090,#c0c0c0); color: #000; border-color: #708090; }
+.m-bronze { background: linear-gradient(135deg,#8B4513,#cd7f32); color: #fff; border-color: #8B4513; }
+.m-plain  { background: var(--surface); border-color: var(--border); color: var(--text-2); }
+.m-plain svg { width: 15px; height: 15px; }
+.hack-name { font-size: .88rem; font-weight: 600; color: var(--text); margin-bottom: .15rem; }
+.hack-year { font-size: .72rem; color: var(--text-2); }
+.hack-place { font-size: .72rem; font-weight: 600; color: var(--red-light); margin-top: .25rem; }
+
+/* ═══════════════════════════════════════
+   CONTACT
+═══════════════════════════════════════ */
+.contact-inner { max-width: 560px; margin: 0 auto; text-align: center; }
+.contact-sub { font-size: .9rem; color: var(--text-2); line-height: 1.8; margin-bottom: 1.8rem; }
+.contact-loc { display: inline-flex; align-items: center; gap: .45rem; font-size: .78rem; color: var(--text-2); margin-bottom: 2rem; }
+.contact-loc svg { width: 13px; height: 13px; color: var(--red); }
+.tg-link {
+  display: inline-block; font-family: var(--font-d);
+  font-size: clamp(2rem,7vw,4rem); font-weight: 900; letter-spacing: -.02em;
+  text-decoration: none; margin-bottom: 2.5rem;
+  color: var(--text);
+  transition: color .25s, text-shadow .25s;
+}
+.tg-link:hover {
+  color: var(--red-light);
+  text-shadow: 0 0 24px rgba(255,92,66,.8), 0 0 60px rgba(217,56,32,.4);
+}
+.social-row { display: flex; justify-content: center; flex-wrap: wrap; gap: .75rem; }
+.soc-btn { display: flex; align-items: center; gap: .55rem; padding: .6rem 1.25rem; border-radius: var(--radius-sm); font-size: .82rem; font-weight: 500; text-decoration: none; transition: all .22s; }
+.soc-btn svg { width: 16px; height: 16px; }
+.soc-p { background: var(--grad); color: #fff; box-shadow: 0 3px 16px rgba(217,56,32,.35), 0 0 0 1px rgba(255,92,66,.12); }
+.soc-p:hover { transform: translateY(-2px); box-shadow: 0 5px 22px rgba(217,56,32,.55), 0 0 20px rgba(255,92,66,.2); }
+.soc-s { background: var(--surface); border: 1px solid var(--border); color: var(--text-2); }
+.soc-s:hover { border-color: var(--red-light); color: var(--text); background: var(--red-dim); box-shadow: 0 0 12px rgba(255,92,66,.12); }
+
+/* ═══════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════ */
+footer {
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 1.4rem clamp(1.25rem,5vw,3.5rem);
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: .5rem; position: relative; z-index: 1;
+}
+.footer-brand { font-family: var(--font-d); font-size: .72rem; font-weight: 700; letter-spacing: .1em; }
+.footer-brand .logo-igor { color: var(--text); }
+.footer-brand .logo-xmel { color: var(--red-light); text-shadow: 0 0 10px rgba(255,92,66,.6); }
+.footer-copy { font-size: .7rem; color: var(--text-3); }
+.footer-copy span { color: var(--text-2); }
+</style>
+</head>
+<body>
+<div id="cursor"></div>
+
+<!-- NAV ──────────────────────────── -->
+<nav>
+  <a href="#hero" class="nav-logo"><span class="logo-igor">IGOR</span>&nbsp;<span class="logo-xmel">XMEL</span></a>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="#about"          data-key="nav_about">Обо мне</a></li>
+    <li><a href="#specialization" data-key="nav_skills">Навыки</a></li>
+    <li><a href="#stack"          data-key="nav_stack">Стек</a></li>
+    <li><a href="#projects"       data-key="nav_projects">Проекты</a></li>
+    <li><a href="#hackathons"     data-key="nav_events">Хакатоны</a></li>
+    <li><a href="#contact"        data-key="nav_contact">Контакт</a></li>
+  </ul>
+  <div class="nav-right">
+    <div class="lang-pill">
+      <button id="btn-ru" class="active" onclick="setLang('ru')">RU</button>
+      <button id="btn-en" onclick="setLang('en')">EN</button>
+    </div>
+    <button class="burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<!-- HERO ─────────────────────────── -->
+<section id="hero">
+  <div class="hero-spotlight" aria-hidden="true"></div>
+  <div class="hero-flare" aria-hidden="true"></div>
+
+  <div class="hero-inner">
+    <div class="hero-eyebrow fade-up"><span data-key="hero_role">Backend Developer</span></div>
+
+    <h1 class="hero-name fade-up" style="transition-delay:.07s">
+      <span class="name-first">IGOR</span>
+      <span class="name-last">XMEL</span>
+    </h1>
+
+    <div class="hero-meta fade-up" style="transition-delay:.14s">
+      <span class="hero-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        Python · Java
+      </span>
+      <span class="hero-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8.686 2 6 4.686 6 8c0 5.25 6 14 6 14s6-8.75 6-14c0-3.314-2.686-6-6-6z"/><circle cx="12" cy="8" r="2"/></svg>
+        <span data-key="hero_city">Ростов-на-Дону</span>
+      </span>
+      <span class="hero-meta-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        @IgorXmel
+      </span>
+    </div>
+
+    <p class="hero-desc fade-up" style="transition-delay:.21s" data-key="hero_desc">
+      Разрабатываю серверную логику, REST API и телеграм-ботов. Строю системы с упором на надёжность, чистоту архитектуры и реальный результат.
+    </p>
+
+    <div class="hero-btns fade-up" style="transition-delay:.28s">
+      <a href="#projects" class="btn btn-p">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        <span data-key="btn_projects">Проекты</span>
+      </a>
+      <a href="https://t.me/IgorXmel" target="_blank" class="btn btn-o">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z"/></svg>
+        Telegram
+      </a>
+      <a href="https://github.com/GigaGitCoder" target="_blank" class="btn btn-o">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.92.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+        GitHub
+      </a>
+    </div>
+
+
+  </div>
+
+  <div class="scroll-cue" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    <span>scroll</span>
+  </div>
+</section>
+
+<!-- ABOUT ────────────────────────── -->
+<section id="about" class="sw sw-alt">
+  <div class="sec-label fade-up">
+    <span class="sec-num">01</span>
+    <h2 class="sec-title" data-key="s_about">Обо мне</h2>
+    <div class="sec-line"></div>
+  </div>
+  <div class="about-grid">
+    <div class="about-text fade-up">
+      <p data-key="about_p1">Привет, я <strong><span style="color:var(--text)">Igor</span> <span style="color:var(--red-light);text-shadow:0 0 10px rgba(255,92,66,.5)">Xmel</span></strong> — backend-разработчик из <strong>Ростова-на-Дону</strong>. Пишу на <strong>Python</strong> и <strong>Java</strong>, строю серверные системы, REST API, микросервисы и телеграм-ботов под самые разные задачи.</p>
+      <p data-key="about_p2">Особое место занимает <strong>разработка ботов</strong> — aiogram, telebot, FSM-сценарии, интеграции с внешними сервисами. Реализовал ботов разной сложности: от простых уведомлений до полноценных CRM-инструментов.</p>
+      <p data-key="about_p3">Активно участвую в хакатонах и соревнованиях — люблю работать под дедлайном и решать нетривиальные задачи в команде. Большинство рабочих проектов — в закрытых репозиториях.</p>
+    </div>
+    <div class="stats-grid fade-up" style="transition-delay:.1s">
+      <div class="stat-card">
+        <div class="stat-card-num">3+</div>
+        <div class="stat-card-label" data-key="stat_years">Лет опыта</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-num">10+</div>
+        <div class="stat-card-label" data-key="stat_events">Соревнований</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-num">10+</div>
+        <div class="stat-card-label" data-key="stat_bots">Ботов создано</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SPECIALIZATION ───────────────── -->
+<section id="specialization" class="sw">
+  <div class="sec-label fade-up">
+    <span class="sec-num">02</span>
+    <h2 class="sec-title" data-key="s_spec">Специализация</h2>
+    <div class="sec-line"></div>
+  </div>
+  <div class="spec-grid">
+    <div class="spec-card fade-up">
+      <div class="spec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="10" width="20" height="11" rx="3"/><path d="M8 10V7a4 4 0 018 0v3"/><circle cx="9" cy="15.5" r="1.2" fill="currentColor"/><circle cx="15" cy="15.5" r="1.2" fill="currentColor"/></svg></div>
+      <div class="spec-title" data-key="spec1_t">Разработка ботов</div>
+      <p class="spec-desc" data-key="spec1_d">Телеграм-боты на aiogram и telebot — FSM, inline-меню, платёжные интеграции, вебхуки. Боты для бизнеса и личных проектов.</p>
+    </div>
+    <div class="spec-card fade-up" style="transition-delay:.07s">
+      <div class="spec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="20" height="4" rx="1"/><rect x="2" y="9" width="20" height="4" rx="1"/><rect x="2" y="15" width="20" height="4" rx="1"/><circle cx="19" cy="5" r=".8" fill="currentColor"/><circle cx="19" cy="11" r=".8" fill="currentColor"/><circle cx="19" cy="17" r=".8" fill="currentColor"/></svg></div>
+      <div class="spec-title" data-key="spec2_t">Backend & API</div>
+      <p class="spec-desc" data-key="spec2_d">REST API на FastAPI и Flask, микросервисы на Spring Boot. JWT-авторизация, Pydantic-валидация, Swagger UI, чистая архитектура.</p>
+    </div>
+    <div class="spec-card fade-up" style="transition-delay:.14s">
+      <div class="spec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg></div>
+      <div class="spec-title" data-key="spec3_t">Базы данных</div>
+      <p class="spec-desc" data-key="spec3_d">PostgreSQL, MySQL, SQLite — проектирование схем, миграции (Alembic, Liquibase). ORM: SQLAlchemy, Hibernate. Кэширование: Redis.</p>
+    </div>
+    <div class="spec-card fade-up" style="transition-delay:.21s">
+      <div class="spec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="11" width="4" height="4" rx=".5"/><rect x="9" y="11" width="4" height="4" rx=".5"/><rect x="15" y="11" width="4" height="4" rx=".5"/><rect x="9" y="5" width="4" height="4" rx=".5"/><path d="M3 15c0 2.5 2 4 5 4h8c3 0 5-1.5 5-4"/></svg></div>
+      <div class="spec-title" data-key="spec4_t">DevOps & Deploy</div>
+      <p class="spec-desc" data-key="spec4_d">Docker и docker-compose для любого стека. CI/CD через GitHub Actions. Развёртывание на Linux-серверах под Windows / Mac / Linux.</p>
+    </div>
+  </div>
+</section>
+
+<!-- STACK ────────────────────────── -->
+<section id="stack" class="sw sw-alt">
+  <div class="sec-label fade-up">
+    <span class="sec-num">03</span>
+    <h2 class="sec-title">Tech Stack</h2>
+    <div class="sec-line"></div>
+  </div>
+  <div class="fade-up">
+    <div class="stack-group">
+      <div class="stack-group-label" data-key="st_lang">Языки</div>
+      <div class="stack-pills">
+        <span class="pill hi"><span class="pill-dot"></span>Python</span>
+        <span class="pill hi"><span class="pill-dot"></span>Java</span>
+        <span class="pill"><span class="pill-dot"></span>SQL</span>
+        <span class="pill"><span class="pill-dot"></span>Bash</span>
+      </div>
+    </div>
+    <div class="stack-group">
+      <div class="stack-group-label" data-key="st_fw">Фреймворки</div>
+      <div class="stack-pills">
+        <span class="pill hi"><span class="pill-dot"></span>Aiogram</span>
+        <span class="pill hi"><span class="pill-dot"></span>Telebot</span>
+        <span class="pill"><span class="pill-dot"></span>FastAPI</span>
+        <span class="pill"><span class="pill-dot"></span>Flask</span>
+        <span class="pill"><span class="pill-dot"></span>Spring Boot</span>
+        <span class="pill"><span class="pill-dot"></span>Thymeleaf</span>
+        <span class="pill"><span class="pill-dot"></span>SQLAlchemy</span>
+        <span class="pill"><span class="pill-dot"></span>Pydantic</span>
+      </div>
+    </div>
+    <div class="stack-group">
+      <div class="stack-group-label" data-key="st_db">Базы данных</div>
+      <div class="stack-pills">
+        <span class="pill hi"><span class="pill-dot"></span>PostgreSQL</span>
+        <span class="pill"><span class="pill-dot"></span>MySQL</span>
+        <span class="pill"><span class="pill-dot"></span>SQLite</span>
+        <span class="pill"><span class="pill-dot"></span>Redis</span>
+      </div>
+    </div>
+    <div class="stack-group">
+      <div class="stack-group-label" data-key="st_tools">Инструменты</div>
+      <div class="stack-pills">
+        <span class="pill hi"><span class="pill-dot"></span>Docker</span>
+        <span class="pill"><span class="pill-dot"></span>docker-compose</span>
+        <span class="pill"><span class="pill-dot"></span>GitHub Actions</span>
+        <span class="pill"><span class="pill-dot"></span>Git</span>
+        <span class="pill"><span class="pill-dot"></span>Linux</span>
+        <span class="pill"><span class="pill-dot"></span>JWT</span>
+        <span class="pill"><span class="pill-dot"></span>REST API</span>
+        <span class="pill"><span class="pill-dot"></span>Swagger</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROJECTS ─────────────────────── -->
+<section id="projects" class="sw">
+  <div class="sec-label fade-up">
+    <span class="sec-num">04</span>
+    <h2 class="sec-title" data-key="s_projects">Проекты</h2>
+    <div class="sec-line"></div>
+  </div>
+  <div class="projects-grid" id="projects-grid">
+    <div class="skel-card"><div class="skel" style="height:150px"></div></div>
+    <div class="skel-card"><div class="skel" style="height:150px"></div></div>
+    <div class="skel-card"><div class="skel" style="height:150px"></div></div>
+    <div class="skel-card"><div class="skel" style="height:150px"></div></div>
+    <div class="skel-card"><div class="skel" style="height:150px"></div></div>
+    <div class="skel-card"><div class="skel" style="height:150px"></div></div>
+  </div>
+  <div style="text-align:center;margin-top:2rem" class="fade-up">
+    <a href="https://github.com/GigaGitCoder?tab=repositories" target="_blank" class="btn btn-o">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.92.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      <span data-key="btn_repos">Все репозитории на GitHub</span>
+    </a>
+  </div>
+</section>
+
+<!-- HACKATHONS ───────────────────── -->
+<section id="hackathons" class="sw sw-alt">
+  <div class="sec-label fade-up">
+    <span class="sec-num">05</span>
+    <h2 class="sec-title" data-key="s_events">Соревнования</h2>
+    <div class="sec-line"></div>
+  </div>
+  <div class="hack-grid">
+    <div class="hack-card podium fade-up">
+      <div class="hack-medal m-silver">2</div>
+      <div><div class="hack-name">DevHack #5</div><div class="hack-year">2024</div><div class="hack-place" data-key="p2nd">2-е место</div></div>
+    </div>
+    <div class="hack-card podium fade-up" style="transition-delay:.06s">
+      <div class="hack-medal m-bronze">3</div>
+      <div><div class="hack-name">DevHack #6</div><div class="hack-year">2025</div><div class="hack-place" data-key="p3rd">3-е место</div></div>
+    </div>
+    <div class="hack-card fade-up" style="transition-delay:.12s">
+      <div class="hack-medal m-plain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg></div>
+      <div><div class="hack-name">DDoS Guard</div><div class="hack-year">2024</div><div class="hack-place" data-key="part">Участник</div></div>
+    </div>
+    <div class="hack-card fade-up" style="transition-delay:.18s">
+      <div class="hack-medal m-plain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg></div>
+      <div><div class="hack-name">DDoS Guard</div><div class="hack-year">2025</div><div class="hack-place" data-key="part">Участник</div></div>
+    </div>
+    <div class="hack-card fade-up" style="transition-delay:.24s">
+      <div class="hack-medal m-plain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg></div>
+      <div><div class="hack-name">RinHack #9</div><div class="hack-year">2024 / 2025</div><div class="hack-place" data-key="part">Участник</div></div>
+    </div>
+    <div class="hack-card fade-up" style="transition-delay:.3s">
+      <div class="hack-medal m-plain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg></div>
+      <div><div class="hack-name" data-key="h_spring">Хакатон Весна</div><div class="hack-year">2025</div><div class="hack-place" data-key="part">Участник</div></div>
+    </div>
+    <div class="hack-card fade-up" style="transition-delay:.36s">
+      <div class="hack-medal m-plain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg></div>
+      <div><div class="hack-name" data-key="h_autumn">Хакатон Осень</div><div class="hack-year">2025</div><div class="hack-place" data-key="part">Участник</div></div>
+    </div>
+    <div class="hack-card fade-up" style="transition-delay:.42s">
+      <div class="hack-medal m-plain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg></div>
+      <div><div class="hack-name">SibGameJam May</div><div class="hack-year">2025</div><div class="hack-place" data-key="part">Участник</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT ──────────────────────── -->
+<section id="contact" class="sw">
+  <div class="contact-inner">
+    <div class="sec-label fade-up" style="justify-content:center;margin-bottom:1.5rem">
+      <span class="sec-num">06</span>
+      <h2 class="sec-title" data-key="s_contact">Контакт</h2>
+    </div>
+    <p class="contact-sub fade-up" style="transition-delay:.07s" data-key="c_sub">Открыт к новым проектам, коллаборациям и интересным задачам.</p>
+    <div class="contact-loc fade-up" style="transition-delay:.12s">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2C8.686 2 6 4.686 6 8c0 5.25 6 14 6 14s6-8.75 6-14c0-3.314-2.686-6-6-6z"/><circle cx="12" cy="8" r="2"/></svg>
+      <span data-key="c_city">Ростов-на-Дону, Россия</span>
+    </div>
+    <a href="https://t.me/IgorXmel" target="_blank" class="tg-link fade-up" style="transition-delay:.17s">@IgorXmel</a>
+    <div class="social-row fade-up" style="transition-delay:.24s">
+      <a href="https://t.me/IgorXmel" target="_blank" class="soc-btn soc-p">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z"/></svg>
+        Telegram
+      </a>
+      <a href="https://github.com/GigaGitCoder" target="_blank" class="soc-btn soc-s">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.92.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER ───────────────────────── -->
+<footer>
+  <div class="footer-brand"><span class="logo-igor">IGOR</span>&nbsp;<span class="logo-xmel">XMEL</span></div>
+  <div class="footer-copy">© 2025 <span style="color:var(--text)">Igor</span> <span style="color:var(--red-light);text-shadow:0 0 8px rgba(255,92,66,.5)">Xmel</span> · <span data-key="f_city">Ростов-на-Дону</span> · Python · Java</div>
+</footer>
+
+<script>
+'use strict';
+
+/* ── cursor ─────────────────────── */
+const cur = document.getElementById('cursor');
+if (cur && matchMedia('(pointer:fine)').matches) {
+  document.addEventListener('mousemove', e => { cur.style.left = e.clientX+'px'; cur.style.top = e.clientY+'px'; });
+  document.querySelectorAll('a,button').forEach(el => {
+    el.addEventListener('mouseenter', () => { cur.style.width='12px'; cur.style.height='12px'; });
+    el.addEventListener('mouseleave', () => { cur.style.width='6px';  cur.style.height='6px'; });
+  });
+}
+
+/* ── burger ─────────────────────── */
+const burger = document.getElementById('burger');
+const navEl  = document.getElementById('nav-links');
+burger.addEventListener('click', () => {
+  const o = burger.classList.toggle('open');
+  navEl.classList.toggle('open', o);
+  document.body.style.overflow = o ? 'hidden' : '';
+});
+navEl.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+  burger.classList.remove('open'); navEl.classList.remove('open'); document.body.style.overflow = '';
+}));
+
+/* ── fade-in ────────────────────── */
+const obs = new IntersectionObserver(
+  entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
+  { threshold: .08 }
+);
+document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+
+/* ── active nav ─────────────────── */
+document.querySelectorAll('section[id]').forEach(s => {
+  new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+      const l = document.querySelector(`.nav-links a[href="#${e.target.id}"]`);
+      if (l) l.classList.add('active');
+    });
+  }, { rootMargin: '-40% 0px -55% 0px' }).observe(s);
+});
+
+/* ══════════════════════════════════
+   I18N
+══════════════════════════════════ */
+const T = {
+  ru: {
+    nav_about:'Обо мне', nav_skills:'Навыки', nav_stack:'Стек',
+    nav_projects:'Проекты', nav_events:'Соревнования', nav_contact:'Контакт',
+    hero_role:'Backend Developer', hero_city:'Ростов-на-Дону',
+    hero_desc:'Разрабатываю серверную логику, REST API и телеграм-ботов. Строю системы с упором на надёжность, чистоту архитектуры и реальный результат.',
+    btn_projects:'Проекты', btn_repos:'Все репозитории на GitHub',
+    s_about:'Обо мне', s_spec:'Специализация', s_projects:'Проекты',
+    s_events:'Соревнования', s_contact:'Контакт',
+    about_p1:'Привет, я <strong><span style="color:#f2ede8">Igor</span> <span style="color:#ff5c42;text-shadow:0 0 10px rgba(255,92,66,.5)">Xmel</span></strong> — backend-разработчик из <strong>Ростова-на-Дону</strong>. Пишу на <strong>Python</strong> и <strong>Java</strong>, строю серверные системы, REST API, микросервисы и телеграм-ботов под самые разные задачи.',
+    about_p2:'Особое место занимает <strong>разработка ботов</strong> — aiogram, telebot, FSM-сценарии, интеграции с внешними сервисами. Реализовал ботов разной сложности: от простых уведомлений до полноценных CRM-инструментов.',
+    about_p3:'Активно участвую в хакатонах и соревнованиях — люблю работать под дедлайном и решать нетривиальные задачи в команде. Большинство рабочих проектов — в закрытых репозиториях.',
+    stat_years:'Лет опыта', stat_events:'Соревнований', stat_bots:'Ботов создано', stat_repos:'Репозиториев',
+    spec1_t:'Разработка ботов', spec1_d:'Телеграм-боты на aiogram и telebot — FSM, inline-меню, платёжные интеграции, вебхуки. Боты для бизнеса и личных проектов.',
+    spec2_t:'Backend & API', spec2_d:'REST API на FastAPI и Flask, микросервисы на Spring Boot. JWT-авторизация, Pydantic-валидация, Swagger UI, чистая архитектура.',
+    spec3_t:'Базы данных', spec3_d:'PostgreSQL, MySQL, SQLite — проектирование схем, миграции (Alembic, Liquibase). ORM: SQLAlchemy, Hibernate. Кэширование: Redis.',
+    spec4_t:'DevOps & Deploy', spec4_d:'Docker и docker-compose для любого стека. CI/CD через GitHub Actions. Развёртывание на Linux-серверах под Windows / Mac / Linux.',
+    st_lang:'Языки', st_fw:'Фреймворки', st_db:'Базы данных', st_tools:'Инструменты',
+    p2nd:'2-е место', p3rd:'3-е место', part:'Участник',
+    h_spring:'Хакатон Весна', h_autumn:'Хакатон Осень',
+    c_sub:'Открыт к новым проектам, коллаборациям и интересным задачам.',
+    c_city:'Ростов-на-Дону, Россия', f_city:'Ростов-на-Дону',
+    gh_repos:'репозиториев', gh_followers:'подписчиков',
+    repo_nd:'Описание не указано', repo_open:'Открыть',
+  },
+  en: {
+    nav_about:'About', nav_skills:'Skills', nav_stack:'Stack',
+    nav_projects:'Projects', nav_events:'Events', nav_contact:'Contact',
+    hero_role:'Backend Developer', hero_city:'Rostov-on-Don',
+    hero_desc:'I build server logic, REST APIs and Telegram bots. Systems focused on reliability, clean architecture and real-world results.',
+    btn_projects:'Projects', btn_repos:'All repositories on GitHub',
+    s_about:'About me', s_spec:'Specialization', s_projects:'Projects',
+    s_events:'Events', s_contact:'Contact',
+    about_p1:'Hey, I\'m <strong><span style="color:#f2ede8">Igor</span> <span style="color:#ff5c42;text-shadow:0 0 10px rgba(255,92,66,.5)">Xmel</span></strong> — a backend developer from <strong>Rostov-on-Don</strong>. I write in <strong>Python</strong> and <strong>Java</strong>, building server systems, REST APIs, microservices and Telegram bots for all kinds of tasks.',
+    about_p2:'A major focus of mine is <strong>bot development</strong> — aiogram, telebot, FSM flows, integrations with external services. I\'ve built bots of varying complexity, from simple notifications to full CRM tools.',
+    about_p3:'I actively participate in hackathons and competitions — I enjoy working under tight deadlines and solving non-trivial problems as a team. Most production projects are in private repositories.',
+    stat_years:'Years of exp.', stat_events:'Competitions', stat_bots:'Bots built', stat_repos:'Repositories',
+    spec1_t:'Bot Development', spec1_d:'Telegram bots with aiogram and telebot — FSM flows, inline menus, payment integrations, webhooks. Bots for business and personal projects.',
+    spec2_t:'Backend & API', spec2_d:'REST APIs with FastAPI and Flask, microservices with Spring Boot. JWT auth, Pydantic validation, Swagger UI, clean architecture.',
+    spec3_t:'Databases', spec3_d:'PostgreSQL, MySQL, SQLite — schema design, migrations (Alembic, Liquibase). ORM: SQLAlchemy, Hibernate. Caching: Redis.',
+    spec4_t:'DevOps & Deploy', spec4_d:'Docker and docker-compose for any stack. CI/CD via GitHub Actions. Server deployment on Linux for Windows / Mac / Linux.',
+    st_lang:'Languages', st_fw:'Frameworks', st_db:'Databases', st_tools:'Tools',
+    p2nd:'2nd place', p3rd:'3rd place', part:'Participant',
+    h_spring:'Hackathon Spring', h_autumn:'Hackathon Autumn',
+    c_sub:'Open to new projects, collaborations and interesting challenges.',
+    c_city:'Rostov-on-Don, Russia', f_city:'Rostov-on-Don',
+    gh_repos:'repositories', gh_followers:'followers',
+    repo_nd:'No description', repo_open:'View',
+  }
+};
+
+let lang = 'ru';
+
+function setLang(l) {
+  lang = l;
+  document.getElementById('btn-ru').classList.toggle('active', l==='ru');
+  document.getElementById('btn-en').classList.toggle('active', l==='en');
+  document.documentElement.lang = l;
+  const d = T[l];
+  document.querySelectorAll('[data-key]').forEach(el => {
+    if (d[el.dataset.key] !== undefined) el.innerHTML = d[el.dataset.key];
+  });
+  if (window._repos) renderRepos(window._repos);
+}
+
+/* ══════════════════════════════════
+   GITHUB API
+══════════════════════════════════ */
+const GH = 'GigaGitCoder';
+const LC = {
+  Python:'#3572A5', Java:'#b07219', JavaScript:'#f1e05a', TypeScript:'#2b7489',
+  HTML:'#e34c26', CSS:'#563d7c', Shell:'#89e051', PowerShell:'#012456',
+  Kotlin:'#A97BFF', Go:'#00ADD8', Rust:'#dea584', default:'#8b949e'
+};
+
+/* Fallback data — shown when API is rate-limited or unavailable */
+const FALLBACK = [
+  { name:'JavaLibrary', description:'Микросервисная система для библиотеки — Spring Boot, PostgreSQL, JWT, Thymeleaf, Docker-compose. Кросс-платформенный запуск.', html_url:'https://github.com/GigaGitCoder/JavaLibrary', language:'Java', stargazers_count:1, featured:true },
+  { name:'TelegramBots', description:'Коллекция Telegram-ботов на aiogram и telebot — FSM, inline-меню, интеграции с внешними API.', html_url:'https://github.com/GigaGitCoder?tab=repositories', language:'Python', stargazers_count:0, featured:false },
+  { name:'FastAPI-Service', description:'REST API сервис с JWT-авторизацией, Pydantic-валидацией и Docker-окружением.', html_url:'https://github.com/GigaGitCoder?tab=repositories', language:'Python', stargazers_count:0, featured:false },
+  { name:'bio', description:'Страница-визитка / личный профиль.', html_url:'https://github.com/GigaGitCoder/bio', language:'HTML', stargazers_count:0, featured:false },
+  { name:'Private projects', description:'Большинство рабочих проектов хранится в закрытых репозиториях заказчиков.', html_url:'https://github.com/GigaGitCoder?tab=repositories', language:null, stargazers_count:0, featured:false },
+];
+
+async function loadGH() {
+  /* user profile - no longer renders chips, just updates stat-repos if needed */
+  try {
+    const r = await fetch(`https://api.github.com/users/${GH}`, { headers:{ Accept:'application/vnd.github+json' } });
+    if (r.ok) {
+      const u = await r.json();
+      window._ghUser = u;
+    }
+  } catch(_) {}
+
+  /* repositories */
+  try {
+    const r = await fetch(`https://api.github.com/users/${GH}/repos?sort=updated&per_page=30&type=public`, { headers:{ Accept:'application/vnd.github+json' } });
+    if (!r.ok) throw new Error('rate-limit');
+    const repos = await r.json();
+    if (!Array.isArray(repos) || repos.length === 0) throw new Error('empty');
+    const sorted = [...repos].sort((a,b) => {
+      if (a.name==='JavaLibrary') return -1;
+      if (b.name==='JavaLibrary') return 1;
+      return b.stargazers_count - a.stargazers_count || new Date(b.updated_at) - new Date(a.updated_at);
+    }).slice(0,6);
+    window._repos = sorted;
+    renderRepos(sorted);
+  } catch(_) {
+    /* use fallback */
+    window._repos = FALLBACK;
+    renderRepos(FALLBACK);
+  }
+}
+
+function repoCard(repo) {
+  const d = T[lang];
+  const color = LC[repo.language] || LC.default;
+  const desc  = repo.description || d.repo_nd;
+  return `
+  <div class="project-card ${repo.featured ? 'featured' : ''} fade-up">
+    <div class="p-card-top">
+      <div class="p-card-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+      </div>
+      ${repo.stargazers_count > 0 ? `<div class="p-stars"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>${repo.stargazers_count}</div>` : ''}
+    </div>
+    <div class="p-name">${repo.name}</div>
+    <div class="p-desc">${desc}</div>
+    <div class="p-footer">
+      ${repo.language
+        ? `<div class="p-lang"><span class="lang-dot" style="background:${color}"></span>${repo.language}</div>`
+        : '<div></div>'}
+      <a href="${repo.html_url}" target="_blank" class="p-link" data-key="repo_open">
+        ${d.repo_open}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
+    </div>
+  </div>`;
+}
+
+function renderRepos(repos) {
+  document.getElementById('projects-grid').innerHTML = repos.map(repoCard).join('');
+  document.querySelectorAll('#projects-grid .fade-up').forEach(el => obs.observe(el));
+}
+
+loadGH();
+</script>
+</body>
+</html>
